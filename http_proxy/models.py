@@ -9,7 +9,7 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
-class RequestMonitor(models.Model):
+class DailyRequestMonitor(models.Model):
     request_model = models.CharField(max_length=255)
     date = models.DateField()
     grant_count = models.IntegerField(default=0)
@@ -51,7 +51,7 @@ class RequestMonitor(models.Model):
 
 
 # RequestLimiter(limit: int)?
-class RequestManager(models.Manager):
+class DailyRequestManager(models.Manager):
     STOLEN_GRANT_THRESHOLD = 0
 
     def request_grant(self):
@@ -65,16 +65,16 @@ class RequestManager(models.Manager):
     def steal_grant(self):
         monitor = self._monitor()
         monitor.grant()
-        if monitor.grant_count >= RequestManager.STOLEN_GRANT_THRESHOLD:
+        if monitor.grant_count >= DailyRequestManager.STOLEN_GRANT_THRESHOLD:
             msg = 'Grant stolen over threshold ({}/{})'
             logger.warning(msg.format(monitor.grant_count,
-                                      RequestManager.STOLEN_GRANT_THRESHOLD))
+                                      DailyRequestManager.STOLEN_GRANT_THRESHOLD))
 
     def request_sent(self):
         self._monitor().request_sent()
 
     def _monitor(self):
-        monitor, _ = RequestMonitor.objects.get_or_create(
+        monitor, _ = DailyRequestMonitor.objects.get_or_create(
             request_model=self.model._meta.model_name,
             date=timezone.now(),
         )
@@ -96,7 +96,7 @@ class ProPublicaRequest(models.Model):
     sent_on = models.DateTimeField(null=True)
     http_code = models.IntegerField(null=True)
 
-    objects = RequestManager()
+    objects = DailyRequestManager()
 
     @classmethod
     def get(cls, endpoint):
