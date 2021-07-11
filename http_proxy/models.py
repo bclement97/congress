@@ -6,7 +6,7 @@ from django.db.models import F
 from django.utils import timezone
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('http_proxy.models')
 
 
 class DailyRequestMonitor(models.Model):
@@ -123,7 +123,7 @@ class ProPublicaRequest(models.Model):
             return None
         now = timezone.now()
         # TODO: make request
-        logger.info(f'[{now}] {self}')
+        logger.info(self)
         self.sent_on = now
         self.http_code = 200
         self.save()
