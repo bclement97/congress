@@ -45,3 +45,6 @@ class Senator(models.Model):
     source_last_updated = models.DateTimeField()
     source_last_checked = models.DateTimeField()
     added_on = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Sen. {self.last_name} ({self.party}-{self.state})'
