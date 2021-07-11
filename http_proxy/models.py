@@ -28,23 +28,29 @@ class DailyRequestMonitor(models.Model):
         self.grant_count = F('grant_count') + 1
         self.save()
         self.refresh_from_db()
-        logger.debug('{} granted (count: {})'.format(self.request_model,
-                                                     self.grant_count))
+        logger.debug('{} granted (count: {})'.format(
+            self.request_model,
+            self.grant_count,
+        ))
 
     def revoke_grant(self):
         self.grant_count = F('grant_count') - 1
         self.save()
         self.refresh_from_db()
-        logger.debug('{} revoked (count: {})'.format(self.request_model,
-                                                     self.grant_count))
+        logger.debug('{} revoked (count: {})'.format(
+            self.request_model,
+            self.grant_count,
+        ))
 
     def request_sent(self):
         self.sent_count = F('sent_count') + 1
         self.save()
         self.refresh_from_db()
-        msg = '{} sent ({}/{})'.format(self.request_model, self.sent_count,
-                                       self.grant_count)
-        logger.debug(msg)
+        logger.debug('{} sent ({}/{})'.format(
+            self.request_model,
+            self.sent_count,
+            self.grant_count,
+        ))
 
     def __str__(self):
         return f'{self.request_model} {self.date:%m/%d/%Y}'
@@ -66,9 +72,10 @@ class DailyRequestManager(models.Manager):
         monitor = self._monitor()
         monitor.grant()
         if monitor.grant_count >= DailyRequestManager.STOLEN_GRANT_THRESHOLD:
-            msg = 'Grant stolen over threshold ({}/{})'
-            logger.warning(msg.format(monitor.grant_count,
-                                      DailyRequestManager.STOLEN_GRANT_THRESHOLD))
+            logger.warning('Grant stolen over threshold ({}/{})'.format(
+                monitor.grant_count,
+                DailyRequestManager.STOLEN_GRANT_THRESHOLD,
+            ))
 
     def request_sent(self):
         self._monitor().request_sent()
