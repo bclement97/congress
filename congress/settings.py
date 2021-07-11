@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'http_proxy.apps.HttpProxyConfig',
     'senate.apps.SenateConfig',
     'django.contrib.admin',
     'django.contrib.auth',
