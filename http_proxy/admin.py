@@ -1,3 +1,6 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import DailyRequestMonitor, ProPublicaRequest
+
+admin.site.register(DailyRequestMonitor)
+admin.site.register(ProPublicaRequest)
