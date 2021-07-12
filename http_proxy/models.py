@@ -1,7 +1,7 @@
 import logging
 import requests
 
-from django.db import models, transaction
+from django.db import models
 from django.db.models import F
 from django.utils import timezone
 
@@ -62,6 +62,8 @@ class DailyRequestManager(models.Manager):
 
     def request_grant(self):
         monitor = self._monitor()
+        if monitor.sent_count >= self.model.DAILY_LIMIT:
+            return False
         monitor.grant()
         if monitor.grant_count <= self.model.DAILY_LIMIT:
             return True
@@ -71,11 +73,12 @@ class DailyRequestManager(models.Manager):
     def steal_grant(self):
         monitor = self._monitor()
         monitor.grant()
-        if monitor.grant_count >= DailyRequestManager.STOLEN_GRANT_THRESHOLD:
+        if monitor.grant_count > DailyRequestManager.STOLEN_GRANT_THRESHOLD:
             logger.warning('Grant stolen over threshold ({}/{})'.format(
                 monitor.grant_count,
                 DailyRequestManager.STOLEN_GRANT_THRESHOLD,
             ))
+        return monitor.grant_count <= self.model.DAILY_LIMIT
 
     def request_sent(self):
         self._monitor().request_sent()
@@ -112,25 +115,32 @@ class ProPublicaRequest(models.Model):
 
     @classmethod
     def _create(cls, http_method, endpoint):
-        granted = cls.objects.request_grant()
         request = cls(http_method=http_method, endpoint=endpoint,
-                      granted=granted)
+                      granted=cls.objects.request_grant())
         request.save()
         return request
 
     def _send(self):
         if not self.granted:
-            return None
+            return
         now = timezone.now()
-        # TODO: make request
         logger.info(self)
+        # TODO: make request
         self.sent_on = now
         self.http_code = 200
+        # Request was created and sent around midnight.
+        if self.sent_on.date() != self.created_on.date():
+            # Stealing a grant is safe because it is very unlikely the limit's
+            # been reached just after midnight. Even if it's not, it's best to
+            # have a correct grant_count for diagnostics.
+            #
+            # If for some reason the stolen grant isn't valid (exceeds the
+            # daily limit), self.granted is set to False even though
+            # self.sent_on has a value. This allows filtering for these
+            # requests.
+            self.granted = ProPublicaRequest.objects.steal_grant()
+        ProPublicaRequest.objects.request_sent()
         self.save()
-        with transaction.atomic():
-            if self.sent_on.date() != self.created_on.date():
-                ProPublicaRequest.objects.steal_grant()
-            ProPublicaRequest.objects.request_sent()
         return self.http_code  # placeholder for the full response
 
     def __str__(self):
