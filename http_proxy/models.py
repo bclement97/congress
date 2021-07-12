@@ -22,6 +22,7 @@ class DailyRequestMonitor(models.Model):
             models.UniqueConstraint(fields=['request_model', 'date'],
                                     name='daily_unique_request_model'),
         ]
+        # default_permissions = ('add', 'view')
         indexes = [
             models.Index(fields=['request_model', '-date']),
         ]
@@ -110,6 +111,13 @@ class ProPublicaRequest(models.Model):
     http_code = models.IntegerField(null=True, editable=False)
 
     objects = DailyRequestManager()
+
+    class Meta:
+        # default_permissions = ('add', 'view')
+        indexes = [
+            models.Index(fields=['endpoint', '-sent_on']),
+        ]
+        verbose_name = 'ProPublica request'
 
     @classmethod
     def get(cls, endpoint):
