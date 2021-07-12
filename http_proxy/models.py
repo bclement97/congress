@@ -12,10 +12,10 @@ logger = logging.getLogger('http_proxy.models')
 
 
 class DailyRequestMonitor(models.Model):
-    request_model = models.CharField(max_length=255)
-    date = models.DateField()
-    grant_count = models.IntegerField(default=0)
-    sent_count = models.IntegerField(default=0)
+    request_model = models.CharField(max_length=255, editable=False)
+    date = models.DateField(editable=False)
+    grant_count = models.IntegerField(default=0, editable=False)
+    sent_count = models.IntegerField(default=0, editable=False)
 
     class Meta:
         constraints = [
@@ -101,12 +101,13 @@ class ProPublicaRequest(models.Model):
     class HttpMethod(models.TextChoices):
         GET = 'GET'
 
-    http_method = models.CharField(max_length=7, choices=HttpMethod.choices)
-    endpoint = models.URLField()
-    granted = models.BooleanField()
-    created_on = models.DateTimeField(auto_now_add=True)
-    sent_on = models.DateTimeField(null=True)
-    http_code = models.IntegerField(null=True)
+    http_method = models.CharField(max_length=7, choices=HttpMethod.choices,
+                                   editable=False)
+    endpoint = models.URLField(editable=False)
+    granted = models.BooleanField(editable=False)
+    created_on = models.DateTimeField(auto_now_add=True, editable=False)
+    sent_on = models.DateTimeField(null=True, editable=False)
+    http_code = models.IntegerField(null=True, editable=False)
 
     objects = DailyRequestManager()
 
