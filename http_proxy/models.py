@@ -1,3 +1,5 @@
+import urllib.parse
+
 import logging
 import requests
 
@@ -126,6 +128,8 @@ class ProPublicaRequest(models.Model):
         now = timezone.now()
         logger.info(self)
         # TODO: make request
+        # url = urllib.parse.urljoin(ProPublicaRequest.BASE_URL, self.endpoint)
+        # response = requests.request(self.http_method, url)
         self.sent_on = now
         self.http_code = 200
         # Request was created and sent around midnight.
