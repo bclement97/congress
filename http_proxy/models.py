@@ -129,7 +129,7 @@ class Request(models.Model):
     def __str__(self):
         return f'{self.http_method} {self.endpoint}'
 
-    def send(self) -> int:  # -> requests.Response:
+    def send(self):  # -> requests.Response:
         raise NotImplementedError
 
 
@@ -173,4 +173,4 @@ class ProPublicaRequest(Request):
             self.granted = ProPublicaRequest.objects.steal_grant()
         ProPublicaRequest.objects.request_sent()
         self.save()
-        return self.http_code  # placeholder for the full response
+        return self  # placeholder for the full response
