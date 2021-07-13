@@ -1,8 +1,7 @@
+import logging
 import urllib.parse
 
-import logging
 import requests
-
 from django.db import models
 from django.db.models import F
 from django.utils import timezone
@@ -94,58 +93,78 @@ class DailyRequestManager(models.Manager):
         return monitor
 
 
-class ProPublicaRequest(models.Model):
-    VERSION = 1
-    BASE_URL = f'https://api.propublica.org/congress/{VERSION}/'
-    DAILY_LIMIT = 5000
-
+class Request(models.Model):
     class HttpMethod(models.TextChoices):
         GET = 'GET'
 
     http_method = models.CharField(max_length=7, choices=HttpMethod.choices,
                                    editable=False)
     endpoint = models.URLField(editable=False)
-    granted = models.BooleanField(editable=False)
-    created_on = models.DateTimeField(auto_now_add=True, editable=False)
+    created_on = models.DateTimeField(default=timezone.now, editable=False)
     sent_on = models.DateTimeField(null=True, editable=False)
     http_code = models.IntegerField(null=True, editable=False)
 
-    objects = DailyRequestManager()
-
     class Meta:
+        abstract = True
         # default_permissions = ('add', 'view')
         indexes = [
             models.Index(fields=['endpoint', '-sent_on']),
         ]
-        verbose_name = 'ProPublica request'
+
+    @property
+    def base_url(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def url(self):
+        return urllib.parse.urljoin(self.base_url, self.endpoint)
 
     @classmethod
     def get(cls, endpoint):
-        request = cls._create(cls.HttpMethod.GET, endpoint)
-        return request._send()
+        return cls.objects.create(
+            http_method=cls.HttpMethod.GET,
+            endpoint=endpoint,
+        ).send()
 
-    @classmethod
-    def _create(cls, http_method, endpoint):
-        request = cls(http_method=http_method, endpoint=endpoint,
-                      granted=cls.objects.request_grant())
-        request.save()
-        return request
+    def __str__(self):
+        return f'{self.http_method} {self.endpoint}'
 
-    def _send(self):
-        if not self.granted:
+    def send(self) -> int:  # -> requests.Response:
+        raise NotImplementedError
+
+
+class ProPublicaRequest(Request):
+    VERSION = 1
+    DAILY_LIMIT = 5000
+
+    objects = DailyRequestManager()
+
+    granted = models.BooleanField(default=objects.request_grant,
+                                  editable=False)
+
+    class Meta(Request.Meta):
+        verbose_name = 'ProPublica request'
+
+    @property
+    def base_url(self):
+        return 'https://api.propublica.org/congress/{}/'.format(
+            ProPublicaRequest.VERSION
+        )
+
+    def send(self):
+        if not self.granted or self.sent_on:
             return
         now = timezone.now()
         logger.info(self)
         # TODO: make request
-        # url = urllib.parse.urljoin(ProPublicaRequest.BASE_URL, self.endpoint)
-        # response = requests.request(self.http_method, url)
+        # response = requests.request(self.http_method, self.url)
         self.sent_on = now
         self.http_code = 200
         # Request was created and sent around midnight.
         if self.sent_on.date() != self.created_on.date():
-            # Stealing a grant is safe because it is very unlikely the limit's
-            # been reached just after midnight. Even if it's not, it's best to
-            # have a correct grant_count for diagnostics.
+            # Stealing a grant is safe because it is very unlikely the limit
+            # has been reached just after midnight. Even if it's not, it's best
+            # to have a correct grant_count for diagnostics.
             #
             # If for some reason the stolen grant isn't valid (exceeds the
             # daily limit), self.granted is set to False even though
@@ -155,6 +174,3 @@ class ProPublicaRequest(models.Model):
         ProPublicaRequest.objects.request_sent()
         self.save()
         return self.http_code  # placeholder for the full response
-
-    def __str__(self):
-        return f'{self.http_method} {self.endpoint}'
