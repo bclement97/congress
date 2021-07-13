@@ -1,3 +1,5 @@
+import urllib.parse
+
 import logging
 import urllib.parse
 
@@ -119,6 +121,13 @@ class Request(models.Model):
     def url(self):
         return urllib.parse.urljoin(self.base_url, self.endpoint)
 
+    class Meta:
+        # default_permissions = ('add', 'view')
+        indexes = [
+            models.Index(fields=['endpoint', '-sent_on']),
+        ]
+        verbose_name = 'ProPublica request'
+
     @classmethod
     def get(cls, endpoint):
         return cls.objects.create(
@@ -126,11 +135,11 @@ class Request(models.Model):
             endpoint=endpoint,
         ).send()
 
-    def __str__(self):
-        return f'{self.http_method} {self.endpoint}'
-
     def send(self):  # -> requests.Response:
         raise NotImplementedError
+
+    def __str__(self):
+        return f'{self.http_method} {self.endpoint}'
 
 
 class ProPublicaRequest(Request):
@@ -163,8 +172,8 @@ class ProPublicaRequest(Request):
         # Request was created and sent around midnight.
         if self.sent_on.date() != self.created_on.date():
             # Stealing a grant is safe because it is very unlikely the limit
-            # has been reached just after midnight. Even if it's not, it's best
-            # to have a correct grant_count for diagnostics.
+            # has been reached just after the midnight reset. Even if it's not,
+            # it's best to have a correct grant_count for diagnostics.
             #
             # If for some reason the stolen grant isn't valid (exceeds the
             # daily limit), self.granted is set to False even though
@@ -173,4 +182,4 @@ class ProPublicaRequest(Request):
             self.granted = ProPublicaRequest.objects.steal_grant()
         ProPublicaRequest.objects.request_sent()
         self.save()
-        return self  # placeholder for the full response
+        return self  # TODO: placeholder for the full response
