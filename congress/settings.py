@@ -135,7 +135,8 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'simple': {
-            'format': '[{asctime} {levelname} {module}]\t{message}',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+            'format': '{asctime}|{levelname} {name}:{lineno}\t{message}',
             'style': '{',
         },
     },
