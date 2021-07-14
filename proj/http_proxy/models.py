@@ -1,10 +1,11 @@
 import logging
+from typing import Tuple
 import urllib.parse
 
-import requests
 from django.db import models
 from django.db.models import F
 from django.utils import timezone
+import requests
 
 
 logger = logging.getLogger('http_proxy.models')
@@ -128,21 +129,26 @@ class Request(models.Model):
             endpoint=endpoint,
         ).send()
 
-    def send(self):  # -> requests.Response:
+    def send(self) -> Tuple[int, object]:
         raise NotImplementedError
 
     def __str__(self):
         return f'{self.http_method} {self.endpoint}'
 
 
+def _propublica_request_grant():
+    return ProPublicaRequest.objects.request_grant()
+
+
 class ProPublicaRequest(Request):
     VERSION = 1
     DAILY_LIMIT = 5000
 
-    objects = DailyRequestManager()
-
-    granted = models.BooleanField(default=objects.request_grant,
+    granted = models.BooleanField(default=_propublica_request_grant,
                                   editable=False)
+    response = models.JSONField(null=True, editable=False)
+
+    objects = DailyRequestManager()
 
     class Meta(Request.Meta):
         verbose_name = 'ProPublica request'
@@ -175,4 +181,4 @@ class ProPublicaRequest(Request):
             self.granted = ProPublicaRequest.objects.steal_grant()
         ProPublicaRequest.objects.request_sent()
         self.save()
-        return self  # TODO: placeholder for the full response
+        return self.http_code, self.response

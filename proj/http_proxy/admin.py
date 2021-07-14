@@ -10,7 +10,7 @@ class DailyRequestMonitorAdmin(admin.ModelAdmin):
 
 class ProPublicaRequestAdmin(admin.ModelAdmin):
     readonly_fields = ('http_method', 'endpoint', 'granted', 'created_on',
-                       'sent_on', 'http_code',)
+                       'sent_on', 'http_code', 'response',)
 
 
 admin.site.register(DailyRequestMonitor, DailyRequestMonitorAdmin)
