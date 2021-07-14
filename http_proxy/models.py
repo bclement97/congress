@@ -121,13 +121,6 @@ class Request(models.Model):
     def url(self):
         return urllib.parse.urljoin(self.base_url, self.endpoint)
 
-    class Meta:
-        # default_permissions = ('add', 'view')
-        indexes = [
-            models.Index(fields=['endpoint', '-sent_on']),
-        ]
-        verbose_name = 'ProPublica request'
-
     @classmethod
     def get(cls, endpoint):
         return cls.objects.create(
