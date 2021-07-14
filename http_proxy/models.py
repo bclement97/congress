@@ -1,5 +1,3 @@
-import urllib.parse
-
 import logging
 import urllib.parse
 
