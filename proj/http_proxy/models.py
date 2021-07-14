@@ -167,7 +167,7 @@ class ProPublicaRequest(Request):
         # TODO: make request
         # response = requests.request(self.http_method, self.url)
         self.sent_on = now
-        self.http_code = 200
+        self.http_code = 204  # No Content
         # Request was created and sent around midnight.
         if self.sent_on.date() != self.created_on.date():
             # Stealing a grant is safe because it is very unlikely the limit
