@@ -23,7 +23,7 @@ class DailyRequestMonitor(models.Model):
             models.UniqueConstraint(fields=['request_model', 'date'],
                                     name='daily_unique_request_model'),
         ]
-        # default_permissions = ('add', 'view')  # is add necessary?
+        # default_permissions = ('view')  # Users would only ever view these.
         indexes = [
             models.Index(fields=['request_model', '-date']),
         ]
@@ -108,7 +108,7 @@ class Request(models.Model):
 
     class Meta:
         abstract = True
-        # default_permissions = ('add', 'view')  # is add necessary?
+        # default_permissions = ('view')  # Users would only ever view these.
         indexes = [
             models.Index(fields=['endpoint', 'http_method']),
             models.Index(fields=['-created_on']),
