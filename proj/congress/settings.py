@@ -84,7 +84,7 @@ DATABASES = {
         'NAME': 'postgres',
         'USER': 'postgres',
         'PASSWORD': 'postgres',
-        'HOST': 'db',
+        'HOST': 'postgres',
         'PORT': 5432,
     }
 }
@@ -161,7 +161,7 @@ LOGGING = {
 }
 
 # Celery
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_TIMEZONE = 'America/Los_Angeles'
 CELERY_TASK_TRACK_STARTED = True

@@ -1,21 +1,40 @@
 version: "3.9"
 
 services:
-  web:
+  celery:
     build: ./proj
-    command: python manage.py runserver 0.0.0.0:8000
+    command: celery -A congress worker -l INFO
     volumes:
       - ./proj:/app
-    ports:
-      - "8000:8000"
+#    environment:
+#      - DEBUG=1
+#      - SECRET_KEY=dbaa1_i7%*3r9-=z-+_mz4r-!qeed@(-a_r(g@k8jo8y3r27%m
+#      - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
     depends_on:
-      db:
+      postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
-  db:
+  celery-beat:
+    build: ./proj
+    command: celery -A congress beat -l INFO
+    volumes:
+      - ./proj:/app
+#    environment:
+#      - DEBUG=1
+#      - SECRET_KEY=dbaa1_i7%*3r9-=z-+_mz4r-!qeed@(-a_r(g@k8jo8y3r27%m
+#      - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
     image: postgres
     volumes:
-      - data:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
@@ -26,5 +45,26 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli", "ping" ]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  django-web:
+    build: ./proj
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./proj:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 volumes:
-  data:
+  db-data:
