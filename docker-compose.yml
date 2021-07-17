@@ -31,6 +31,19 @@ services:
       redis:
         condition: service_healthy
 
+  django-web:
+    build: ./proj
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./proj:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   postgres:
     image: postgres
     volumes:
@@ -52,19 +65,6 @@ services:
       interval: 1s
       timeout: 3s
       retries: 30
-
-  django-web:
-    build: ./proj
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - ./proj:/app
-    ports:
-      - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
 volumes:
   db-data:
